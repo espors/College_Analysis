@@ -1,0 +1,88 @@
+---
+title: "Education_analysis"
+author: "Nichole Peters"
+date: "11/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+## Load the libraries
+
+library(tidytuesdayR)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(tidyr)
+library(corrplot)
+library(corrgram)
+library(usmap)
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+## Pull the datasets
+
+tuition_cost <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/tuition_cost.csv')
+
+tuition_income <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/tuition_income.csv') 
+
+salary_potential <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/salary_potential.csv')
+
+historical_tuition <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/historical_tuition.csv')
+
+diversity_school <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/diversity_school.csv')
+```
+
+```{r}
+#Modify year 
+historical_tuition$yearmod <- sapply(strsplit(historical_tuition$year, split='-', fixed=TRUE), function(x) (x[1]))
+
+#Create a subset for All Institutions
+historical_tuitionALL <- subset(historical_tuition, historical_tuition$type == "All Institutions")
+
+#Create subsets for all, 2, and 4 year institutions
+histall <- subset(historical_tuitionALL, historical_tuitionALL$tuition_type == "All Constant")
+hist2year <- subset(historical_tuitionALL, historical_tuitionALL$tuition_type == "2 Year Constant")
+hist4year <- subset(historical_tuitionALL, historical_tuitionALL$tuition_type == "4 Year Constant")
+```
+
+```{r}
+## Plot tutition cost over time for all institutions
+
+p <- ggplot(histall, aes(yearmod, tuition_cost)) +
+  labs(x = "Year", y="Tuition Cost", title = "All Institution Cost over Time") +
+  theme(axis.text.x = element_text(angle = 90))+
+  geom_col()
+ggplotly(p)
+```
+
+```{r}
+## Plot tutition cost over time for 2 year institutions
+
+p <- ggplot(hist2year, aes(yearmod, tuition_cost)) +
+  labs(x = "Year", y="Tuition Cost", title = "2 Year Institution Cost over Time") +
+  theme(axis.text.x = element_text(angle = 90))+
+  geom_col()
+ggplotly(p)
+```
+
+```{r}
+## Plot tutition cost over time for 4 year institutions
+
+p <- ggplot(hist4year, aes(yearmod, tuition_cost)) +
+  labs(x = "Year", y="Tuition Cost", title = "4 Year Institution Cost over Time") +
+  theme(axis.text.x = element_text(angle = 90))+
+  geom_col()
+ggplotly(p)
+```
+
+```{r}
+#Tution costs have continued to increase over the years, more prominately for 4 year instituitions. What causes this and why do we see this trend? What factors influence the cost the most?
+
+#From 1985 to 2016 the cost of 2 year institutions has gone up $3,090 whereas the cost of 4 year institutions has risen $14,319. There's a significant difference in the increase of price between the two.
+```
+
+
