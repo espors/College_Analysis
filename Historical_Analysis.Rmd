@@ -168,4 +168,28 @@ p <- ggplot(potential_salary, aes(x = stem_group, y = mid_career_pay, fill = typ
 ggplotly(p)
 ```
 
+```{r}
+## Group in STEM percent into differnt levels
+potential_salary <- potential_salary %>% 
+  mutate(makebetter_group = case_when(
+    between(make_world_better_percent, 0, 10) ~ "0 to 10",
+    between(make_world_better_percent, 10, 20) ~ "10 to 20",
+    between(make_world_better_percent, 20, 30) ~ "20 to 30",
+    between(make_world_better_percent, 30, 40) ~ "30 to 40",
+    between(make_world_better_percent, 40, 50) ~ "40 to 50",
+    between(make_world_better_percent, 50, 60) ~ "50 to 60",
+    between(make_world_better_percent, 60, 70) ~ "60 to 70",
+    between(make_world_better_percent, 70, 80) ~ "70 to 80",
+    between(make_world_better_percent, 80, 90) ~ "80 to 90",
+    between(make_world_better_percent, 90, 100) ~ "90 to 100",
+    TRUE ~ "Not Reported"
+  ))
+```
 
+```{r}
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, fill = type)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="Estimated Mid Career Pay", title = "Make World Better Percent and Mid Career Pay Compared")+
+  theme(axis.text.x = element_text(angle = 45))
+ggplotly(p)
+```
