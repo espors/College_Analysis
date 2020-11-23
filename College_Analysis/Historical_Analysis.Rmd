@@ -1,0 +1,40 @@
+---
+title: "Historical Data"
+author: "Emma Spors"
+date: "11/19/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+```
+
+
+```{r}
+historical_tuition <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/historical_tuition.csv')
+
+head(historical_tuition)
+summary(historical_tuition)
+```
+```{r}
+hist_tuition <- historical_tuition %>%
+  filter(tuition_type == "All Constant" | tuition_type == "4 Year Constant" | tuition_type == "2 Year Constant") %>%
+  filter(type == "All Institutions")
+ts_plot <- ggplot(data = hist_tuition, aes(x = year, group = tuition_type)) + 
+  geom_line(aes(y = tuition_cost, color = tuition_type)) + 
+  ggtitle("Historical Costs of College \n Adjusted for Inflation") + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  xlab("Year") + 
+  ylab("College Tuition Cost") + 
+  labs(color = "Type of Degree")
+  
+
+ts_plot
+```
+
