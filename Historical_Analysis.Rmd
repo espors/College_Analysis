@@ -1,0 +1,195 @@
+---
+title: "Education_analysis"
+author: "Nichole Peters"
+date: "11/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+## Load the libraries
+library(tidytuesdayR)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(tidyr)
+library(corrplot)
+library(corrgram)
+library(usmap)
+library(moments)
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+## Pull the datasets
+tuition_cost <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/tuition_cost.csv')
+
+tuition_income <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/tuition_income.csv') 
+
+salary_potential <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/salary_potential.csv')
+
+historical_tuition <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/historical_tuition.csv')
+
+diversity_school <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/diversity_school.csv')
+```
+
+```{r}
+#Modify year 
+historical_tuition$yearmod <- sapply(strsplit(historical_tuition$year, split='-', fixed=TRUE), function(x) (x[1]))
+
+#Create a subset for All Institutions
+historical_tuitionALL <- subset(historical_tuition, historical_tuition$type == "All Institutions")
+
+#Create subsets for all, 2, and 4 year institutions
+histall <- subset(historical_tuitionALL, historical_tuitionALL$tuition_type == "All Constant")
+hist2year <- subset(historical_tuitionALL, historical_tuitionALL$tuition_type == "2 Year Constant")
+hist4year <- subset(historical_tuitionALL, historical_tuitionALL$tuition_type == "4 Year Constant")
+```
+
+```{r}
+## Plot tutition cost over time for all institutions
+p <- ggplot(histall, aes(yearmod, tuition_cost)) +
+  labs(x = "Year", y="Tuition Cost", title = "All Institution Cost over Time") +
+  theme(axis.text.x = element_text(angle = 90))+
+  geom_col()
+ggplotly(p)
+```
+
+```{r}
+## Plot tutition cost over time for 2 year institutions
+p <- ggplot(hist2year, aes(yearmod, tuition_cost)) +
+  labs(x = "Year", y="Tuition Cost", title = "2 Year Institution Cost over Time") +
+  theme(axis.text.x = element_text(angle = 90))+
+  geom_col()
+ggplotly(p)
+```
+
+```{r}
+## Plot tutition cost over time for 4 year institutions
+p <- ggplot(hist4year, aes(yearmod, tuition_cost)) +
+  labs(x = "Year", y="Tuition Cost", title = "4 Year Institution Cost over Time") +
+  theme(axis.text.x = element_text(angle = 90))+
+  geom_col()
+ggplotly(p)
+```
+
+```{r}
+#Tution costs have continued to increase over the years, more prominately for 4 year instituitions.
+
+#From 1985 to 2016 the cost of 2 year institutions has gone up $3,090 whereas the cost of 4 year institutions has risen $14,319. There's a significant difference in the increase of price between the two.
+```
+
+```{r}
+## replace _ with ,
+tuition_income$income_lvl <- replace(tuition_income$income_lvl,tuition_income$income_lvl=="48_001 to 75,000","48,001 to 75,000")
+```
+
+```{r}
+lowestincome <- subset(tuition_income, tuition_income$income_lvl == "0 to 30,000")
+lowincome <- subset(tuition_income, tuition_income$income_lvl == "30,001 to 48,000")
+midincome <- subset(tuition_income, tuition_income$income_lvl == "48,001 to 75,000")
+highincome <- subset(tuition_income, tuition_income$income_lvl == "75,001 to 110,000")
+highestincome <- subset(tuition_income, tuition_income$income_lvl == "Over 110,000")
+```
+
+```{r}
+p <- ggplot(tuition_income, aes(x = income_lvl, y = net_cost, fill = income_lvl)) +
+  geom_boxplot()+
+  labs(x = "Income Levels", y="Net Cost", title = "Income Levels and Net Costs Compared")+
+  theme(axis.text.x = element_text(angle = 90))
+ggplotly(p)
+```
+
+```{r}
+## Merge salary potential and tuition cost datasets by name of college
+potential_salary <- merge(salary_potential,tuition_cost,by=c("name"))
+```
+
+```{r}
+p <- ggplot(potential_salary, aes(x = in_state_tuition, y = mid_career_pay, fill = type,label = name)) +
+  geom_point()+
+  labs(x = "In State Tuition Cost", y="Estimated Mid Career Pay", title = "In State vs. Estimated Mid Career Pay for Types of Instituitions Costs Compared") 
+ggplotly(p)
+```
+
+```{r}
+## Group in state tution into differnt levels
+potential_salary <- potential_salary %>% 
+  mutate(salary_group = case_when(
+    between(in_state_tuition, 0, 10000) ~ "0 to 10000",
+    between(in_state_tuition, 10000, 20000) ~ "10000 to 20000",
+    between(in_state_tuition, 20000, 30000) ~ "20000 to 30000",
+    between(in_state_tuition, 30000, 40000) ~ "30000 to 40000",
+    between(in_state_tuition, 40000, 50000) ~ "40000 to 50000",
+    between(in_state_tuition, 50000, 60000) ~ "50000 to 60000",
+    between(in_state_tuition, 60000, 70000) ~ "60000 to 70000",
+    TRUE ~ NA_character_
+  ))
+```
+
+```{r}
+p <- ggplot(potential_salary, aes(x = salary_group, y = mid_career_pay, fill = type)) +
+  geom_boxplot()+
+  labs(x = "In State Tuition", y="Estimated Mid Career Pay", title = "In State Tuition and Mid Career Pay Compared")+
+  theme(axis.text.x = element_text(angle = 45))
+ggplotly(p)
+```
+
+```{r}
+cor(potential_salary$in_state_tuition,potential_salary$mid_career_pay)
+cor(potential_salary$in_state_tuition,potential_salary$early_career_pay)
+```
+
+```{r}
+## Group in STEM percent into differnt levels
+potential_salary <- potential_salary %>% 
+  mutate(stem_group = case_when(
+    between(stem_percent, 0, 10) ~ "0 to 10",
+    between(stem_percent, 10, 20) ~ "10 to 20",
+    between(stem_percent, 20, 30) ~ "20 to 30",
+    between(stem_percent, 30, 40) ~ "30 to 40",
+    between(stem_percent, 40, 50) ~ "40 to 50",
+    between(stem_percent, 50, 60) ~ "50 to 60",
+    between(stem_percent, 60, 70) ~ "60 to 70",
+    between(stem_percent, 70, 80) ~ "70 to 80",
+    between(stem_percent, 80, 90) ~ "80 to 90",
+    between(stem_percent, 90, 100) ~ "90 to 100",
+    TRUE ~ NA_character_
+  ))
+```
+
+```{r}
+p <- ggplot(potential_salary, aes(x = stem_group, y = mid_career_pay, fill = type)) +
+  geom_boxplot()+
+  labs(x = "STEM Percent", y="Estimated Mid Career Pay", title = "STEM Percent and Mid Career Pay Compared")+
+  theme(axis.text.x = element_text(angle = 45))
+ggplotly(p)
+```
+
+```{r}
+## Group in STEM percent into differnt levels
+potential_salary <- potential_salary %>% 
+  mutate(makebetter_group = case_when(
+    between(make_world_better_percent, 0, 10) ~ "0 to 10",
+    between(make_world_better_percent, 10, 20) ~ "10 to 20",
+    between(make_world_better_percent, 20, 30) ~ "20 to 30",
+    between(make_world_better_percent, 30, 40) ~ "30 to 40",
+    between(make_world_better_percent, 40, 50) ~ "40 to 50",
+    between(make_world_better_percent, 50, 60) ~ "50 to 60",
+    between(make_world_better_percent, 60, 70) ~ "60 to 70",
+    between(make_world_better_percent, 70, 80) ~ "70 to 80",
+    between(make_world_better_percent, 80, 90) ~ "80 to 90",
+    between(make_world_better_percent, 90, 100) ~ "90 to 100",
+    TRUE ~ "Not Reported"
+  ))
+```
+
+```{r}
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, fill = type)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="Estimated Mid Career Pay", title = "Make World Better Percent and Mid Career Pay Compared")+
+  theme(axis.text.x = element_text(angle = 45))
+ggplotly(p)
+```
