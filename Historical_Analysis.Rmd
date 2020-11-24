@@ -76,10 +76,24 @@ ggplotly(p)
 ```
 
 ```{r}
-#Tution costs have continued to increase over the years, more prominately for 4 year instituitions.
-
-#From 1985 to 2016 the cost of 2 year institutions has gone up $3,090 whereas the cost of 4 year institutions has risen $14,319. There's a significant difference in the increase of price between the two.
+  #create line graph to compare the historical trend of tuition costs across different universities 
+hist_tuition <- historical_tuition %>%
+  filter(tuition_type == "All Constant" | tuition_type == "4 Year Constant" | tuition_type == "2 Year Constant") %>%
+  filter(type == "All Institutions")
+ts_plot <- ggplot(data = hist_tuition, aes(x = year, group = tuition_type)) + 
+  geom_line(aes(y = tuition_cost, color = tuition_type), size = 1) + 
+  ggtitle("Historical Costs of College \n Adjusted for Inflation") + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  xlab("Year") + 
+  ylab("College Tuition Cost") + 
+  labs(color = "Type of Degree")
+  
+ggplotly(ts_plot)
 ```
+
+
+Tuition costs have continued to increase over the years, especially in for 4 year institutions, even when controlling for inflation. 
+From 1985 to 2016 the cost of 2 year institutions has gone up \$3,090 whereas the cost of 4 year institutions has risen $14,319. There's a significant difference in the increase of price between the two.
 
 ```{r}
 ## replace _ with ,
@@ -95,10 +109,11 @@ highestincome <- subset(tuition_income, tuition_income$income_lvl == "Over 110,0
 ```
 
 ```{r}
+  #boxplot of income levels and net costs 
 p <- ggplot(tuition_income, aes(x = income_lvl, y = net_cost, fill = income_lvl)) +
   geom_boxplot()+
-  labs(x = "Income Levels", y="Net Cost", title = "Income Levels and Net Costs Compared")+
-  theme(axis.text.x = element_text(angle = 90))
+  labs(x = "Income Levels", y="Net Cost", title = "Income Levels and Net Costs Compared", fill = "Income Level")+
+  theme(axis.text.x = element_text(angle = 90)) 
 ggplotly(p)
 ```
 
@@ -108,9 +123,10 @@ potential_salary <- merge(salary_potential,tuition_cost,by=c("name"))
 ```
 
 ```{r}
+  #ggplot for tuition vs career pay 
 p <- ggplot(potential_salary, aes(x = in_state_tuition, y = mid_career_pay, fill = type,label = name)) +
   geom_point()+
-  labs(x = "In State Tuition Cost", y="Estimated Mid Career Pay", title = "In State vs. Estimated Mid Career Pay for Types of Instituitions Costs Compared") 
+  labs(x = "In State Tuition Cost", y="Estimated Mid Career Pay", title = "In State vs. Estimated Mid Career Pay for Types of Instituitions Costs Compared", fill = "Type of College") 
 ggplotly(p)
 ```
 
@@ -132,7 +148,7 @@ potential_salary <- potential_salary %>%
 ```{r}
 p <- ggplot(potential_salary, aes(x = salary_group, y = mid_career_pay, fill = type)) +
   geom_boxplot()+
-  labs(x = "In State Tuition", y="Estimated Mid Career Pay", title = "In State Tuition and Mid Career Pay Compared")+
+  labs(x = "In State Tuition", y="Estimated Mid Career Pay", title = "In State Tuition and Mid Career Pay Compared", fill = "Type of College")+
   theme(axis.text.x = element_text(angle = 45))
 ggplotly(p)
 ```
@@ -163,7 +179,7 @@ potential_salary <- potential_salary %>%
 ```{r}
 p <- ggplot(potential_salary, aes(x = stem_group, y = mid_career_pay, fill = type)) +
   geom_boxplot()+
-  labs(x = "STEM Percent", y="Estimated Mid Career Pay", title = "STEM Percent and Mid Career Pay Compared")+
+  labs(x = "STEM Percent", y="Estimated Mid Career Pay", title = "STEM Percent and Mid Career Pay Compared", fill = "Type of School")+
   theme(axis.text.x = element_text(angle = 45))
 ggplotly(p)
 ```
