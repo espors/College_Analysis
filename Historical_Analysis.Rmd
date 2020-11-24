@@ -219,14 +219,104 @@ College_Data <- read_csv("College_Data.csv")
 ```
 
 ```{r}
+
+  #data wrangling
+  
+  #select variables 
 college_df <- College_Data %>% 
-  select(c(ADM_RATE, ACTCMMID, SAT_AVG, INEXPFTE, C150_4,ICLEVEL, MD_EARN_WNE_P6, DEBT_MDN, GRAD_DEBT_MDN
-))
+  select(INSTNM, ADM_RATE, ACTCMMID, SAT_AVG, INEXPFTE, C150_4,ICLEVEL, MD_EARN_WNE_P6, DEBT_MDN, GRAD_DEBT_MDN)
+
+college_df$ADM_RATE <- as.double(college_df$ADM_RATE)
+college_df$ACTCMMID <- as.double(college_df$ACTCMMID)
+college_df$SAT_AVG <- as.double(college_df$SAT_AVG)
+college_df$INEXPFTE <- as.double(college_df$INEXPFTE)
+college_df$C150_4 <- as.double(college_df$C150_4)
+college_df$MD_EARN_WNE_P6 <- as.double(college_df$MD_EARN_WNE_P6)
+college_df$DEBT_MDN <- as.double(college_df$DEBT_MDN)
+college_df$GRAD_DEBT_MDN <- as.double(college_df$GRAD_DEBT_MDN)
+
+  #update name of college for joining 
+colnames(college_df)[colnames(college_df) == "INSTNM"] <- "name"
+
+  #select variables 
 col1 <- tuition_cost %>%
   select(c(name, room_and_board, in_state_tuition, out_of_state_tuition))
-col2 <- tuition_income %>%
-  select(c(name, net_cost))
-col3<- salary_potential %>%
+col2<- salary_potential %>%
   select(c(mid_career_pay, make_world_better_percent, stem_percent, name))
+
+  #joing datasets 
+col <- inner_join(col1, col2, by = "name")
+college_factors <- inner_join(col, college_df, by = "name")
+```
+
+
+```{r}
+summary(college_factors)
+```
+
+```{r}
+college_pc <- college_factors %>%
+  select(-c(name, ICLEVEL))
+
+college_pc[is.na(college_pc)] <- 0
+principle_components <- prcomp(college_pc, scale. = T)
+
+principle_components$rotation[1:5,1:4]
+std_dev <- principle_components$sdev
+pr_var <- std_dev^2
+prop_varex <- pr_var/sum(pr_var)
+
+plot(cumsum(prop_varex), xlab = "Principle Component", ylab = "Cummulative Proportion of Variance Explained", type = "b")
+abline(h = .95, col = "grey")
+sum(prop_varex[1:9])
+```
+With 9 principle components, 95% of the variance is explained. 
+
+```{r}
+college_pc <- cbind(college_pc, principle_components$x)
+college_pc <- as.data.frame(college_pc[, 15:23])
+head(college_pc)
+```
+
+```{r}
+set.seed(2345)
+
+kmean_withinss <- function(k) {
+    cluster <- kmeans(college_pc, k)
+    return (cluster$tot.withinss)
+}
+
+max_k <- 20 
+wss <- sapply(2:max_k, kmean_withinss)
+elbow <- data.frame(2:max_k, wss)
+
+ggplot(elbow, aes(x = X2.max_k, y = wss)) +
+    geom_point() +
+    geom_line() +
+    scale_x_continuous(breaks = seq(1, 20, by = 1))
+```
+
+We will choose 8 as the optimal cluster. 
+
+```{r}
+pc_cluster <- kmeans(college_pc, 8)
+pc_cluster$cluster
+pc_cluster$centers
+pc_cluster$size 
+```
+
+```{r}
+center <- pc_cluster$centers
+cluster <- c(1:8)
+centerdf <- data.frame(cluster, center)
+head(centerdf)
+
+center_reshape <- gather(centerdf, features, values, PC1:PC9)
+
+ggplot(data = center_reshape, aes(x = features, y = cluster, fill = values)) +
+    scale_y_continuous(breaks = seq(1, 7, by = 1)) +
+    geom_tile() +
+    coord_equal() +
+    theme_classic()
 ```
 
