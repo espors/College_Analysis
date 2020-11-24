@@ -210,3 +210,23 @@ p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, fill
   theme(axis.text.x = element_text(angle = 45))
 ggplotly(p)
 ```
+
+
+```{r}
+  #read in more college data 
+library(readr)
+College_Data <- read_csv("College_Data.csv")
+```
+
+```{r}
+college_df <- College_Data %>% 
+  select(c(ADM_RATE, ACTCMMID, SAT_AVG, INEXPFTE, C150_4,ICLEVEL, MD_EARN_WNE_P6, DEBT_MDN, GRAD_DEBT_MDN
+))
+col1 <- tuition_cost %>%
+  select(c(name, room_and_board, in_state_tuition, out_of_state_tuition))
+col2 <- tuition_income %>%
+  select(c(name, net_cost))
+col3<- salary_potential %>%
+  select(c(mid_career_pay, make_world_better_percent, stem_percent, name))
+```
+
