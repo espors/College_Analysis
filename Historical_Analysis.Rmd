@@ -2,7 +2,9 @@
 title: "Education_analysis"
 author: "Nichole Peters"
 date: "11/21/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -251,21 +253,26 @@ college_factors <- inner_join(col, college_df, by = "name")
 
 
 ```{r}
+  #view summary of data 
 summary(college_factors)
 ```
 
 ```{r}
+  #take out unnesseary values 
 college_pc <- college_factors %>%
   select(-c(name, ICLEVEL))
 
+  #remove NA and replace with 0s 
 college_pc[is.na(college_pc)] <- 0
 principle_components <- prcomp(college_pc, scale. = T)
 
+  #look at principle compenents
 principle_components$rotation[1:5,1:4]
 std_dev <- principle_components$sdev
 pr_var <- std_dev^2
 prop_varex <- pr_var/sum(pr_var)
 
+  #plot changing variance 
 plot(cumsum(prop_varex), xlab = "Principle Component", ylab = "Cummulative Proportion of Variance Explained", type = "b")
 abline(h = .95, col = "grey")
 sum(prop_varex[1:9])
@@ -273,19 +280,22 @@ sum(prop_varex[1:9])
 With 9 principle components, 95% of the variance is explained. 
 
 ```{r}
+  #get principle components
 college_pc <- cbind(college_pc, principle_components$x)
 college_pc <- as.data.frame(college_pc[, 15:23])
 head(college_pc)
 ```
 
 ```{r}
-set.seed(2345)
 
+set.seed(2345)
+  #create formula 
 kmean_withinss <- function(k) {
     cluster <- kmeans(college_pc, k)
     return (cluster$tot.withinss)
 }
-
+  
+  #look at best number of clusters 
 max_k <- 20 
 wss <- sapply(2:max_k, kmean_withinss)
 elbow <- data.frame(2:max_k, wss)
@@ -299,6 +309,7 @@ ggplot(elbow, aes(x = X2.max_k, y = wss)) +
 We will choose 8 as the optimal cluster. 
 
 ```{r}
+  #examine clusters 
 pc_cluster <- kmeans(college_pc, 8)
 pc_cluster$cluster
 pc_cluster$centers
@@ -306,6 +317,8 @@ pc_cluster$size
 ```
 
 ```{r}
+
+  #correlation matix
 center <- pc_cluster$centers
 cluster <- c(1:8)
 centerdf <- data.frame(cluster, center)
