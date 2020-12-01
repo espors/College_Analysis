@@ -39,7 +39,12 @@ ui <- fluidPage(
             
             #Get a value of year to predict
             numericInput("estyear", "Enter a Year to Estimate:", 2020, min = 1980, max = 2200),
-            verbatimTextOutput("value")
+            verbatimTextOutput("value"),
+            
+            helpText("For the 2017–18 academic year, annual current dollar prices for undergraduate tuition, fees, room, and board were estimated to be $17,797 at public institutions, $46,014 at private nonprofit institutions, and $26,261 at private for-profit institutions."),
+            helpText(" Between 2007–08 and 2017–18, prices for undergraduate tuition, fees, room, and board at public institutions rose 31 percent, and prices at private nonprofit institutions rose 23 percent, after adjustment for inflation."),
+            helpText("The price for undergraduate tuition, fees, room, and board at private for-profit institutions decreased 9 percent between 2007–08 and 2017–18, after adjustment for inflation."),
+            helpText('SOURCE: U.S. Department of Education, National Center for Education Statistics. (2019). Digest of Education Statistics, 2018 (NCES 2020-009), Chapter 3.')
             
         ),
 

@@ -241,9 +241,9 @@ potential_salary <- potential_salary %>%
 ```
 
 ```{r}
-p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, fill = type)) +
-  geom_boxplot()+
-  labs(x = "Feel Make World Better Percent", y="Estimated Mid Career Pay", title = "Make World Better Percent and Mid Career Pay Compared")+
+p <- ggplot(potential_salary, aes(x = makebetter_group)) +
+  geom_bar()+
+  labs(x = "Feel Make World Better Percent", y="Frequency", title = "Histogram of Make World Better Percent")+
   theme(axis.text.x = element_text(angle = 45))
 ggplotly(p)
 ```
