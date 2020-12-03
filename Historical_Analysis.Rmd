@@ -1,6 +1,6 @@
 ---
 title: "Education_analysis"
-author: "Nichole Peters"
+author: "Emma Spors & Nichole Peters"
 date: "11/21/2020"
 output:
   html_document: default
@@ -23,6 +23,8 @@ library(corrgram)
 library(usmap)
 library(moments)
 library(animation)
+library(tidyverse)
+library(ggpubr)
 ```
 
 ```{r, echo = TRUE, message=FALSE, warning=FALSE}
@@ -41,9 +43,12 @@ diversity_school <- readr::read_csv('https://raw.githubusercontent.com/rfordatas
 ```{r}
 #Modify year 
 historical_tuition$yearmod <- sapply(strsplit(historical_tuition$year, split='-', fixed=TRUE), function(x) (x[1]))
+historical_tuition$yearmod <- as.integer(historical_tuition$yearmod)
 
 #Create a subset for All Institutions
 historical_tuitionALL <- subset(historical_tuition, historical_tuition$type == "All Institutions")
+historical_tuitionpublic <- subset(historical_tuition, historical_tuition$type == "Public")
+historical_tuitionprivate <- subset(historical_tuition, historical_tuition$type == "Private")
 
 #Create subsets for all, 2, and 4 year institutions
 histall <- subset(historical_tuitionALL, historical_tuitionALL$tuition_type == "All Constant")
@@ -78,7 +83,7 @@ p <- ggplot(hist4year, aes(yearmod, tuition_cost)) +
 ggplotly(p)
 ```
 
-```{r}
+```{r, echo = TRUE, message=FALSE, warning=FALSE}}
   #create line graph to compare the historical trend of tuition costs across different universities 
 hist_tuition <- historical_tuition %>%
   filter(tuition_type == "All Constant" | tuition_type == "4 Year Constant" | tuition_type == "2 Year Constant") %>%
@@ -97,6 +102,44 @@ ggplotly(ts_plot)
 
 Tuition costs have continued to increase over the years, especially in for 4 year institutions, even when controlling for inflation. 
 From 1985 to 2016 the cost of 2 year institutions has gone up \$3,090 whereas the cost of 4 year institutions has risen $14,319. There's a significant difference in the increase of price between the two.
+```{r}
+## Get a summary of the data and check variable types
+summary(histall)
+```
+
+```{r}
+## Create a linear model for cost of tuition
+modelall <- lm(tuition_cost ~ yearmod, data = histall)
+modelall
+model4year <- lm(tuition_cost ~ yearmod, data = hist4year)
+model4year
+model2year <- lm(tuition_cost ~ yearmod, data = hist2year)
+model2year
+```
+
+```{r}
+## Summary of the models to check for accuracy
+summary(modelall)
+summary(model4year)
+summary(model2year)
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
+## Plot the linear models alongside historical costs
+hist_tuition <- historical_tuition %>%
+  filter(tuition_type == "All Constant" | tuition_type == "4 Year Constant" | tuition_type == "2 Year Constant") %>%
+  filter(type == "All Institutions")
+ts_plot <- ggplot(data = hist_tuition, aes(x = yearmod, group = tuition_type)) + 
+  geom_line(aes(y = tuition_cost, color = tuition_type), size = 1) + 
+  ggtitle("Historical Costs of College \n Adjusted for Inflation") + 
+  theme(axis.text.x = element_text(angle = 45)) + 
+  xlab("Year") + 
+  ylab("College Tuition Cost") + 
+  labs(color = "Type of Degree")+
+  stat_smooth(method = lm, aes(x=yearmod,y=tuition_cost))
+  
+ggplotly(ts_plot)
+```
 
 ```{r}
 ## replace _ with ,
@@ -104,19 +147,11 @@ tuition_income$income_lvl <- replace(tuition_income$income_lvl,tuition_income$in
 ```
 
 ```{r}
-lowestincome <- subset(tuition_income, tuition_income$income_lvl == "0 to 30,000")
-lowincome <- subset(tuition_income, tuition_income$income_lvl == "30,001 to 48,000")
-midincome <- subset(tuition_income, tuition_income$income_lvl == "48,001 to 75,000")
-highincome <- subset(tuition_income, tuition_income$income_lvl == "75,001 to 110,000")
-highestincome <- subset(tuition_income, tuition_income$income_lvl == "Over 110,000")
-```
-
-```{r}
   #boxplot of income levels and net costs 
 p <- ggplot(tuition_income, aes(x = income_lvl, y = net_cost, fill = income_lvl)) +
   geom_boxplot()+
   labs(x = "Income Levels", y="Net Cost", title = "Income Levels and Net Costs Compared", fill = "Income Level")+
-  theme(axis.text.x = element_text(angle = 90)) 
+  theme(axis.text.x = element_text(angle = 45)) 
 ggplotly(p)
 ```
 
@@ -206,21 +241,37 @@ potential_salary <- potential_salary %>%
 ```
 
 ```{r}
-p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, fill = type)) +
-  geom_boxplot()+
-  labs(x = "Feel Make World Better Percent", y="Estimated Mid Career Pay", title = "Make World Better Percent and Mid Career Pay Compared")+
+## Histogram of make the world better percent
+p <- ggplot(potential_salary, aes(x = makebetter_group)) +
+  geom_bar()+
+  labs(x = "Feel Make World Better Percent", y="Frequency", title = "Histogram of Make World Better Percent")+
   theme(axis.text.x = element_text(angle = 45))
 ggplotly(p)
 ```
 
+```{r}
+## Boxplot for the make the world better vs in state tuition
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = in_state_tuition, label = name)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="In State Tuition Cost", title = "Make World Better vs. Tuition Costs", fill = "Type of College") 
+ggplotly(p)
+```
 
 ```{r}
+## Boxplot for make the world better vs. estimated mid career pay
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, label = name)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="Estimated Mid Career Pay", title = "Make World Better vs. Estimated Mid Career Pay", fill = "Type of College") 
+ggplotly(p)
+```
+
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
   #read in more college data 
 library(readr)
 College_Data <- read_csv("College_Data.csv")
 ```
 
-```{r}
+```{r, echo = TRUE, message=FALSE, warning=FALSE}
 
   #data wrangling
   
