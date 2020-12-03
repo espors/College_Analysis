@@ -1,0 +1,416 @@
+---
+title: "College Analysis"
+author: "Emma Spors"
+date: "12/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+--------------------------------------------------
+Set up and data wrangling 
+--------------------------------------------------
+
+```{r, echo = TRUE, message= FALSE, warning= FALSE}
+#load the necessary libraries 
+library(tidytuesdayR)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(tidyr)
+library(corrplot)
+library(corrgram)
+library(usmap)
+library(moments)
+library(animation)
+library(plyr)
+library(MASS)
+library(readr)
+library(onewaytests)
+library(mice)
+```
+
+```{r, echo= TRUE, message= FALSE, warning= FALSE}
+#pull datasets from from TidyTuesday 
+tuition_cost <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/tuition_cost.csv')
+
+tuition_income <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/tuition_income.csv') 
+
+salary_potential <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/salary_potential.csv')
+
+historical_tuition <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/historical_tuition.csv')
+
+diversity_school <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-10/diversity_school.csv')
+```
+
+```{r}
+#pull in data from the college scorecard 
+College_Data <- read_csv("College_Data.csv")
+```
+
+```{r}
+  #data wrangling
+  
+  #select variables 
+college_df <- College_Data %>% 
+  dplyr::select(INSTNM, ADM_RATE, ACTCMMID, SAT_AVG, INEXPFTE, C150_4,ICLEVEL, MD_EARN_WNE_P6, DEBT_MDN, GRAD_DEBT_MDN)
+
+college_df$ADM_RATE <- as.double(college_df$ADM_RATE)
+college_df$ACTCMMID <- as.double(college_df$ACTCMMID)
+college_df$SAT_AVG <- as.double(college_df$SAT_AVG)
+college_df$INEXPFTE <- as.double(college_df$INEXPFTE)
+college_df$C150_4 <- as.double(college_df$C150_4)
+college_df$MD_EARN_WNE_P6 <- as.double(college_df$MD_EARN_WNE_P6)
+college_df$DEBT_MDN <- as.double(college_df$DEBT_MDN)
+college_df$GRAD_DEBT_MDN <- as.double(college_df$GRAD_DEBT_MDN)
+
+  #update name of college for joining 
+colnames(college_df)[colnames(college_df) == "INSTNM"] <- "name"
+
+  #select variables 
+col1 <- tuition_cost %>%
+  dplyr::select(c(name, type, room_and_board, in_state_tuition, out_of_state_tuition))
+col2<- salary_potential %>%
+  dplyr::select(c(mid_career_pay, make_world_better_percent, stem_percent, name))
+
+  #joining datasets 
+col <- inner_join(col1, col2, by = "name")
+college_factors <- inner_join(col, college_df, by = "name")
+
+  #impute missing data 
+imp <- mice(college_factors,m = 1)
+college_factors <- complete(imp)
+
+  #summary 
+summary(college_factors)
+
+```
+
+```{r}
+  #create color pallete for graphs 
+colPal <- c("#336699", "#FFCC00", "000033", "#FFFFCC")
+```
+
+------------------------------------------------------
+historical trends 
+------------------------------------------------------
+
+```{r}
+#create line graph to compare the historical trend of tuition costs across different universities 
+
+#filter data 
+hist_tuition <- historical_tuition %>%
+  filter(tuition_type == "All Constant" | tuition_type == "4 Year Constant" | tuition_type == "2 Year Constant") %>%
+  filter(type == "All Institutions")
+
+#create ggobject 
+ts_plot <- ggplot(data = hist_tuition, aes(x = year, group = tuition_type)) + 
+  geom_line(aes(y = tuition_cost, color = tuition_type), size = 1) + 
+  ggtitle("Historical Costs of College \n Adjusted for Inflation") + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  xlab("Year") + 
+  ylab("College Tuition Cost") + 
+  labs(color = "Type of Degree") + 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal)
+
+ts_plot
+```
+----------------------------------------------
+public vs private schools 
+-tuition 
+-debt 
+-salary 
+----------------------------------------------
+
+```{r}
+#export plot 
+export(ts_plot, "ts_plot.png")
+```
+
+```{r}
+  #filter data to just private and public 4 year colleges 
+tuition_cost_4 <- tuition_cost %>%
+  filter(degree_length == "4 Year") %>%
+  filter(type == "Private" | type == "Public")
+  
+  #find group medians 
+med1 <- ddply(tuition_cost_4, "type", summarise, grp.median=median(in_state_tuition))
+
+  #find group means 
+mean1 <- ddply(tuition_cost_4, "type", summarise, grp.mean=mean(in_state_tuition))
+mean1
+
+  #create ggobject for tuition histogram 
+salaries4_by <- ggplot(tuition_cost_4, aes(x=in_state_tuition, color = type, fill = type)) + 
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) + 
+  geom_vline(data=med1, aes(xintercept=grp.median, color=type),
+           linetype="dashed") + 
+  labs(x = "In State Tuition", y = "Frequency", title = "Histogram of Tuition by 4 Year College Type") + 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal)
+
+
+salaries4_by
+
+```
+
+```{r}
+  #save tuition histogram 
+ggsave("in_state_tuition.png")
+```
+
+```{r}
+  #boxplot for tution
+ggplot(tuition_cost_4) + 
+  aes(x = type, y = in_state_tuition, fill = type) + 
+  geom_boxplot(alpha = .70) + 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal) + 
+  labs(x = "Type of School", y = "Tutition Cost")
+```
+
+
+```{r}
+  #save boxplot salaries 
+ggsave("tuition_box.png")
+```
+
+```{r}
+  #anova test
+aov_analyis <- welch.test(in_state_tuition ~ type, data = tuition_cost_4) 
+summary(aov_analyis)
+```
+
+```{r}
+college_factors1 <- college_factors %>%
+  filter(type == "Private" | type == "Public")
+
+  #find group medians and means 
+med2 <- ddply(college_factors1, "type", summarise, grp.median=median(GRAD_DEBT_MDN))
+ddply(college_factors1, "type", summarise, grp.mean=mean(GRAD_DEBT_MDN))
+
+  #histogram for debt 
+debt_hist <- ggplot(college_factors1, aes(x=GRAD_DEBT_MDN, color = type, fill = type)) + 
+  geom_histogram(position = "identity", alpha = 0.5, bins = 50) + 
+  geom_vline(data=med2, aes(xintercept=grp.median, color=type),
+           linetype="dashed") + 
+  labs(x = "Median Debt for Graduates", y = "Frequency", title = "Histogram of Median Debt for College Graduates", fill = "Type of School", color = "Type of School") + 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal)
+
+debt_hist
+```
+```{r}
+  #save histogram for debt 
+ggsave("debt_box.png")
+```
+
+```{r}
+  #boxplot for debt 
+ggplot(college_factors1) + 
+  aes(x = type, y = GRAD_DEBT_MDN, fill = type) + 
+  geom_boxplot(alpha = .70) + 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal) + 
+  labs(x = "Type of School", y = "Median Debt")
+```
+
+```{r}
+  #save boxplot 
+ggsave("debt_box.png")
+```
+
+```{r}
+  #anova test 
+aov_analyis2 <- aov(GRAD_DEBT_MDN ~ type, data = college_factors1) 
+summary(aov_analyis2)
+aov_analyis2
+```
+
+```{r}
+  #group mean and median 
+med3 <- ddply(college_factors1, "type", summarise, grp.median=median(mid_career_pay))
+ddply(college_factors1, "type", summarise, grp.mean=mean(mid_career_pay))
+
+  #histogram for career pay 
+pay_hist <- ggplot(college_factors1, aes(x=mid_career_pay, color = type, fill = type)) + 
+  geom_histogram(position = "identity", alpha = 0.4, bins = 50) + 
+  geom_vline(data=med3, aes(xintercept=grp.median, color=type),
+           linetype="dashed") + 
+  labs(x = "Median Mid Career Pay", y = "Frequency", title = "Histogram of Median Career Pay for College Graduates") + 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal)
+
+pay_hist 
+
+```
+
+```{r}
+ggsave("pay.png")
+```
+
+```{r}
+  #box for debt 
+ggplot(college_factors1) + 
+  aes(x = type, y = mid_career_pay, fill = type) + 
+  geom_boxplot(alpha = .70) + 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal) + 
+  labs(x = "Type of School", y = "Median Mid Career Pay")
+```
+
+```{r}
+  #save box
+ggsave("pay_box.png")
+```
+
+```{r}
+#anova analysis 
+aov_analyis2 <- aov(mid_career_pay ~ type, data = college_factors1) 
+summary(aov_analyis2)
+```
+
+-----------------------------------------------------
+linear modeling 
+-private 
+-public 
+-----------------------------------------------------
+
+```{r}
+tuition_cost_4_public <- tuition_cost_4 %>%
+  filter(type == "Public")
+
+m <- mean (tuition_cost_4_public$in_state_tuition)
+sdn <- sd(tuition_cost_4_public$in_state_tuition)
+m
+
+density <- ggplot(tuition_cost_4_public, aes(x=in_state_tuition)) + 
+  geom_density(position = "identity") + 
+  stat_function(geom = "line", fun = dnorm, arg = list(mean = m, sd = sdn))
+
+density_log <- ggplot(tuition_cost_4_public, aes(x=sqrt(in_state_tuition))) + 
+  geom_density(position = "identity")+ 
+  scale_fill_manual(values = colPal) +
+  scale_colour_manual(values = colPal)
+
+density_log
+```
+
+```{r}
+college_lm <- college_factors %>%
+  filter(type == "Public") %>%
+  dplyr::select(-c(name, type, ICLEVEL, MD_EARN_WNE_P6, DEBT_MDN, ACTCMMID, out_of_state_tuition, room_and_board))
+
+full_model <- lm(mid_career_pay ~., data = college_lm)
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+plot(step_model)
+
+college_lm_new <- college_lm[-c(150,162, 34,88, 173, 217,77),]
+full_model2 <- lm(mid_career_pay ~., data = college_lm_new)
+step_model2 <- stepAIC(full_model2, direction = "both", trace = FALSE)
+summary(step_model2)
+plot(step_model2)
+```
+
+
+```{r}
+college_lm <- college_factors %>%
+  filter(type == "Private") %>%
+  dplyr::select(-c(name, type, ICLEVEL, MD_EARN_WNE_P6, DEBT_MDN, ACTCMMID, out_of_state_tuition, room_and_board))
+
+full_model <- lm(mid_career_pay ~., data = college_lm)
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+plot(step_model)
+
+college_lm_new <- college_lm[-c(3,361,71, 217,17, 36),]
+full_model2 <- lm(mid_career_pay ~., data = college_lm_new)
+step_model2 <- stepAIC(full_model2, direction = "both", trace = FALSE)
+summary(step_model2)
+plot(step_model2)
+```
+
+-------------------------------------------
+Happiness 
+-------------------------------------------
+```{r}
+college_factors1 <- college_factors %>%
+  filter(type == "Private" | type == "Public")
+
+plot1 <- ggplot(college_factors1, aes(x = make_world_better_percent, y =mid_career_pay)) + 
+  geom_point(color = "#336699") + 
+  geom_smooth(method = "lm") +
+  labs(x = "Percent of alumni that felt they made the \n world a better place", y = "Estimated Mid Career Pay", main = "Salary vs a Better World") 
+
+plot1
+
+cor(college_factors1$make_world_better_percent, college_factors1$mid_career_pay)
+```
+
+```{r}
+ggsave("better_pay.png")
+```
+
+```{r}
+
+plot2 <- ggplot(college_factors1, aes(x = make_world_better_percent, y = stem_percent)) + 
+  geom_point(color = "#336699") + 
+  geom_smooth(method = "lm") +
+  labs(x = "Percent of alumni that felt they made the \n world a better place", y = "Percent of Students with STEM Major", main = "Stem Percent vs Better World") 
+
+plot2
+
+cor(college_factors1$make_world_better_percent, college_factors1$stem_percent)
+
+```
+
+```{r}
+ggsave("better_stem.png")
+```
+
+
+```{r}
+plot3 <- ggplot(college_factors1, aes(x = stem_percent, y = mid_career_pay)) + 
+  geom_point(color = "#336699") + 
+  geom_smooth(method = "lm") +
+  labs(x = "Percent of Students with STEM Major", y = "Estimated Mid Career Pay", main = "STEM Percent vs Estimated Career Pay") 
+
+plot3
+
+cor(college_factors1$mid_career_pay, college_factors1$stem_percent)
+```
+
+```{r}
+ggsave("stem_pay.png")
+```
+
+```{r}
+## Boxplot for the make the world better vs in state tuition
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = in_state_tuition, label = name)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="In State Tuition Cost", title = "Make World Better vs. Tuition Costs", fill = "Type of College") 
+ggplotly(p)
+```
+
+```{r}
+## Boxplot for make the world better vs. estimated mid career pay
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, label = name)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="Estimated Mid Career Pay", title = "Make World Better vs. Estimated Mid Career Pay", fill = "Type of College") 
+ggplotly(p)
+```
+
+```{r}
+## Histogram of make the world better percent
+p <- ggplot(potential_salary, aes(x = makebetter_group)) +
+  geom_bar()+
+  labs(x = "Feel Make World Better Percent", y="Frequency", title = "Histogram of Make World Better Percent")+
+  theme(axis.text.x = element_text(angle = 45))
+ggplotly(p)
+```
