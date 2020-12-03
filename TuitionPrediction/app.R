@@ -37,6 +37,8 @@ ui <- fluidPage(
             
             selectInput("TuitionType", "Select a Tuition Type:", choices = c(TuitionType)),
             
+            helpText('Constant tuition types have been adjusted for inflation. Current represents the cost of tuition for that school year.'),
+            
             #Get a value of year to predict
             numericInput("estyear", "Enter a Year to Estimate:", 2020, min = 1980, max = 2200),
             verbatimTextOutput("value"),

@@ -241,6 +241,7 @@ potential_salary <- potential_salary %>%
 ```
 
 ```{r}
+## Histogram of make the world better percent
 p <- ggplot(potential_salary, aes(x = makebetter_group)) +
   geom_bar()+
   labs(x = "Feel Make World Better Percent", y="Frequency", title = "Histogram of Make World Better Percent")+
@@ -248,6 +249,21 @@ p <- ggplot(potential_salary, aes(x = makebetter_group)) +
 ggplotly(p)
 ```
 
+```{r}
+## Boxplot for the make the world better vs in state tuition
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = in_state_tuition, label = name)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="In State Tuition Cost", title = "Make World Better vs. Tuition Costs", fill = "Type of College") 
+ggplotly(p)
+```
+
+```{r}
+## Boxplot for make the world better vs. estimated mid career pay
+p <- ggplot(potential_salary, aes(x = makebetter_group, y = mid_career_pay, label = name)) +
+  geom_boxplot()+
+  labs(x = "Feel Make World Better Percent", y="Estimated Mid Career Pay", title = "Make World Better vs. Estimated Mid Career Pay", fill = "Type of College") 
+ggplotly(p)
+```
 
 ```{r, echo = TRUE, message=FALSE, warning=FALSE}
   #read in more college data 
