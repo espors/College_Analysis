@@ -211,6 +211,7 @@ potential_salary <- potential_salary %>%
 ```
 
 ```{r}
+## Boxplot of in state tuition group vs. estimated mid career pay
 p <- ggplot(potential_salary, aes(x = salary_group, y = mid_career_pay, fill = type)) +
   geom_boxplot()+
   labs(x = "In State Tuition", y="Estimated Mid Career Pay", title = "In State Tuition and Mid Career Pay Compared", fill = "Type of College")+
@@ -219,6 +220,7 @@ ggplotly(p)
 ```
 
 ```{r}
+## Correlation coefficient between in stte tuition and mid career pay
 cor(potential_salary$in_state_tuition,potential_salary$mid_career_pay)
 cor(potential_salary$in_state_tuition,potential_salary$early_career_pay)
 ```
@@ -242,6 +244,7 @@ potential_salary <- potential_salary %>%
 ```
 
 ```{r}
+## Boxplot of stem percent vs. estimated mid career pay
 p <- ggplot(potential_salary, aes(x = stem_group, y = mid_career_pay, fill = type)) +
   geom_boxplot()+
   labs(x = "STEM Percent", y="Estimated Mid Career Pay", title = "STEM Percent and Mid Career Pay Compared", fill = "Type of School")+
