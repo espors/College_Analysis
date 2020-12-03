@@ -102,6 +102,33 @@ ggplotly(ts_plot)
 
 Tuition costs have continued to increase over the years, especially in for 4 year institutions, even when controlling for inflation. 
 From 1985 to 2016 the cost of 2 year institutions has gone up \$3,090 whereas the cost of 4 year institutions has risen $14,319. There's a significant difference in the increase of price between the two.
+
+```{r}
+## Create an animated plot to show the historical tuition prices
+hist_tuition <- historical_tuition %>%
+  filter(tuition_type == "All Constant" | tuition_type == "4 Year Constant" | tuition_type == "2 Year Constant") %>%
+  filter(type == "All Institutions")
+library(ggplot2)
+library(gganimate)
+p <- ggplot(hist_tuition, aes(x = yearmod, y = tuition_cost, group = tuition_type, color = tuition_type)) +
+  geom_line(size = 2)+
+  geom_point(size = 4)+
+  theme_bw() +
+  labs(
+    title = "Historical Tuition Costs",
+    x = "Year",
+    y = "Tuition Cost",
+    color = NULL
+  )+
+  scale_color_brewer(palette="Set1")+
+  transition_reveal(Year)
+
+p <- p + transition_reveal(yearmod)
+
+animate(p, fps = 10, width = 750, height = 450)
+anim_save("tuitionplot.gif")
+```
+
 ```{r}
 ## Get a summary of the data and check variable types
 summary(histall)
